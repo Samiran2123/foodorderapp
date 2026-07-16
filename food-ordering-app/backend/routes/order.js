@@ -1,11 +1,14 @@
+const authenticateUser = require("../middleware/authMiddleware");
 const express = require("express");
 const router = express.Router();
-const pool = require("../db");
+const pool = require("../config/db");
 
-router.post("/", async (req, res) => {
+router.post("/", authenticateUser, async (req,res)=>{
     try {
 
-        const { customer_name, items } = req.body;
+      const { items } = req.body;
+
+const userId = req.user.id;
 
         let total = 0;
 
@@ -13,18 +16,17 @@ router.post("/", async (req, res) => {
             total += item.price * item.quantity;
         }
 
-        const orderResult = await pool.query(
-            "INSERT INTO orders (customer_name,total) VALUES ($1,$2) RETURNING id",
-            [customer_name, total]
-        );
-
+       const orderResult = await pool.query(
+    "INSERT INTO orders (user_id,total) VALUES ($1,$2) RETURNING id",
+    [userId, total]
+);
         const orderId = orderResult.rows[0].id;
 
         for (let item of items) {
             await pool.query(
-                "INSERT INTO order_items(order_id,food_id,quantity) VALUES($1,$2,$3)",
-                [orderId, item.id, item.quantity]
-            );
+    "INSERT INTO order_items(order_id,food_id,quantity,price) VALUES($1,$2,$3,$4)",
+    [orderId, item.id, item.quantity, item.price]
+);
         }
 
         res.json({

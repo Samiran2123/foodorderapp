@@ -9,6 +9,32 @@ const api = axios.create({
   },
 });
 
+// Automatically attach Authorization token if it exists in localStorage
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Auth APIs
+export const loginUser = async (email, password) => {
+  const response = await api.post('/auth/login', { email, password });
+  return response.data;
+};
+
+export const registerUser = async (name, email, password) => {
+  const response = await api.post('/auth/register', { name, email, password });
+  return response.data;
+};
+
+// Foods API
 export const fetchFoods = async () => {
   try {
     const response = await api.get('/foods');
@@ -19,6 +45,7 @@ export const fetchFoods = async () => {
   }
 };
 
+// Orders API
 export const placeOrder = async (orderData) => {
   try {
     const response = await api.post('/orders', orderData);
@@ -26,6 +53,18 @@ export const placeOrder = async (orderData) => {
   } catch (error) {
     console.error('Error placing order:', error);
     throw error;
+  }
+};
+
+// Get User Orders API (with client-side localStorage fallback for offline/backend limitation)
+export const fetchUserOrders = async (userId) => {
+  try {
+    const response = await api.get('/orders');
+    return response.data;
+  } catch (error) {
+    console.warn('API error fetching orders, loading from localStorage history:', error);
+    const stored = localStorage.getItem(`orders_user_${userId}`);
+    return stored ? JSON.parse(stored) : [];
   }
 };
 
