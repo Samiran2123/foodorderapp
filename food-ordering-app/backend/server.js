@@ -7,6 +7,8 @@ const adminRoutes = require("./routes/adminRoutes");
 const foodRoutes = require("./routes/food");
 const orderRoutes = require("./routes/order");
 const restaurantRoutes = require("./routes/restaurantRoutes");
+const restaurantFoodRoutes = require("./routes/restaurantFoodRoutes");
+const customerRoutes = require("./routes/customerRoutes");
 
 const app = express();
 
@@ -18,6 +20,8 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/foods", foodRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/restaurants", restaurantRoutes);
+app.use("/api/restaurant", restaurantFoodRoutes);
+app.use("/api", customerRoutes);
 
 app.get("/", (req, res) => {
     res.send("Food Ordering API Running...");
