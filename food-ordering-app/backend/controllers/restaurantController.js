@@ -3,10 +3,12 @@ import pool from "../config/db.js";
 // Apply for Restaurant
 export const applyRestaurant = async (req, res) => {
     try {
+         console.log("Request Body:", req.body);
+        console.log("User:", req.user);
         const ownerId = req.user.id;
 
         const {
-            restaurant_name,
+            name,
             description,
             address,
             phone,
@@ -33,7 +35,7 @@ export const applyRestaurant = async (req, res) => {
             RETURNING *`,
             [
                 ownerId,
-                restaurant_name,
+                name,
                 description,
                 address,
                 phone,

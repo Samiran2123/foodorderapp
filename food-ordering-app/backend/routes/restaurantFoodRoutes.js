@@ -3,6 +3,10 @@ const router = express.Router();
 
 const authenticateUser = require("../middleware/authMiddleware");
 const authorizeRestaurant = require("../middleware/restaurantMiddleware");
+const {
+    getRestaurantOrders,
+    updateOrderStatus
+} = require("../controllers/restaurantOrderController");
 
 const {
     addFood,
@@ -41,6 +45,20 @@ router.delete(
     authenticateUser,
     authorizeRestaurant,
     deleteFood
+);
+
+router.get(
+    "/orders",
+    authenticateUser,
+    authorizeRestaurant,
+    getRestaurantOrders
+);
+
+router.put(
+    "/orders/:id/status",
+    authenticateUser,
+    authorizeRestaurant,
+    updateOrderStatus
 );
 
 module.exports = router;
