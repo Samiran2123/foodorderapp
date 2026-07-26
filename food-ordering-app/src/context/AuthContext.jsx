@@ -1,5 +1,6 @@
+// src/context/AuthContext.jsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import api from '../services/api';
+import api, { loginUserApi, registerUserApi } from '../services/api';
 
 const AuthContext = createContext(null);
 
@@ -8,19 +9,19 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Restore session from localStorage on app load
+  // Restore state from localStorage on load
   useEffect(() => {
     const storedToken = localStorage.getItem('token');
     const storedUser = localStorage.getItem('user');
 
     if (storedToken && storedUser) {
       try {
+        const parsedUser = JSON.parse(storedUser);
         setToken(storedToken);
-        setUser(JSON.parse(storedUser));
-        // Configure Axios authorization header globally
+        setUser(parsedUser);
         api.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
       } catch (err) {
-        console.error('Failed to parse stored user data:', err);
+        console.error('Failed to parse user data from localStorage:', err);
         localStorage.removeItem('token');
         localStorage.removeItem('user');
       }
@@ -30,51 +31,63 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const response = await api.post('/auth/login', { email, password });
-      const { success, token: jwtToken, user: userData, message } = response.data;
-
-      if (success && jwtToken) {
+      const data = await loginUserApi(email, password);
+      if (data.success && data.token) {
+        const { token: jwtToken, user: userData } = data;
         localStorage.setItem('token', jwtToken);
         localStorage.setItem('user', JSON.stringify(userData));
         
         setToken(jwtToken);
         setUser(userData);
         api.defaults.headers.common['Authorization'] = `Bearer ${jwtToken}`;
-        
-        return { success: true, message: message || 'Login successful' };
-      } else {
-        return { success: false, message: message || 'Authentication failed' };
+
+        return { success: true, message: data.message || 'Login successful', role: userData.role };
       }
+      return { success: false, message: data.message || 'Login failed' };
     } catch (error) {
-      console.error('Login error:', error);
-      const errMsg = error.response?.data?.message || 'Failed to login. Please try again.';
-      return { success: false, message: errMsg };
+      const message = error.response?.data?.message || 'Login failed. Please check credentials.';
+      return { success: false, message };
     }
   };
 
   const register = async (name, email, password) => {
     try {
-      const response = await api.post('/auth/register', { name, email, password });
-      const { success, message } = response.data;
-      
-      return { success, message: message || 'Registration completed successfully!' };
+      const data = await registerUserApi(name, email, password);
+      return { success: data.success, message: data.message || 'Registration successful!' };
     } catch (error) {
-      console.error('Registration error:', error);
-      const errMsg = error.response?.data?.message || 'Registration failed. Please check details.';
-      return { success: false, message: errMsg };
+      const message = error.response?.data?.message || 'Registration failed. Try again.';
+      return { success: false, message };
     }
   };
 
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    delete api.defaults.headers.common['Authorization'];
     setToken(null);
     setUser(null);
-    delete api.defaults.headers.common['Authorization'];
   };
 
+  const isAuthenticated = !!token && !!user;
+  const isCustomer = user?.role === 'customer';
+  const isRestaurant = user?.role === 'restaurant';
+  const isAdmin = user?.role === 'admin';
+
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, register, logout }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        loading,
+        isAuthenticated,
+        isCustomer,
+        isRestaurant,
+        isAdmin,
+        login,
+        register,
+        logout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
